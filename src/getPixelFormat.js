@@ -11,6 +11,8 @@
       return 2; // unsigned 16 bit
     } else if(pixelRepresentation === 1 && bitsAllocated === 16) {
       return 3; // signed 16 bit data
+    } else if(pixelRepresentation === 0 && bitsAllocated === 1) {
+      return 4; // single binary mask
     }
   }
 

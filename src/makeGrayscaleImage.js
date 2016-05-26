@@ -10,6 +10,8 @@
         }
         else if(pixelFormat ===2 || pixelFormat ===3){
             return 2;
+        } else if (pixelFormat === 4) {
+            return 0.125; // Bit array
         }
         throw "unknown pixel format";
     }

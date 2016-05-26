@@ -1,4 +1,4 @@
-/*! cornerstone-wado-image-loader - v0.10.1 - 2016-05-04 | (c) 2014 Chris Hafey | https://github.com/chafey/cornerstoneWADOImageLoader */
+/*! cornerstone-wado-image-loader - v0.10.2 - 2016-05-26 | (c) 2014 Chris Hafey | https://github.com/chafey/cornerstoneWADOImageLoader */
 //
 // This is a cornerstone image loader for WADO-URI requests.  It has limited support for compressed
 // transfer syntaxes, check here to see what is currently supported:
@@ -3418,6 +3418,31 @@ var JpegImage = (function jpegImage() {
     return imageFrame;
   }
 
+  function unpackBinaryFrame(byteArray, frameOffset, numPixels) {
+      var pixelData = new Uint8Array(numPixels);
+
+      var bytePos = 0;
+      var nonzero = 0;
+      for (var count = 0; count < numPixels; count++) {
+        // Compute byte position
+        bytePos = Math.floor(count / 8);
+
+        // Bit position (0-7) within byte
+        var bitPos = (count % 8);
+
+        // Check whether bit at bitpos is set
+        if (byteArray[bytePos + frameOffset] && (1 << bitPos)) {
+          pixelData[count] = 1;
+          nonzero = nonzero + 1;
+        } else {
+          pixelData[count] = 0;
+        }
+      }
+      console.log('Number of nonzero elements: ' + nonzero);
+      return pixelData;
+
+  }
+
   function getImageFrame(dataSet, frame, pixelFormat) {
     // Note - we may want to sanity check the rows * columns * bitsAllocated * samplesPerPixel against the buffer size
     var pixelDataElement = dataSet.elements.x7fe00010;
@@ -3442,6 +3467,10 @@ var JpegImage = (function jpegImage() {
     else if(pixelFormat === 3) {
       frameOffset = pixelDataOffset + frame * numPixels * 2;
       return new Int16Array(dataSet.byteArray.buffer, frameOffset, numPixels);
+    }
+    else if(pixelFormat === 4) {
+      frameOffset = pixelDataOffset + frame * numPixels * 0.125;
+      return unpackBinaryFrame(dataSet.byteArray, frameOffset, numPixels);
     }
     throw "Unknown pixel format";
   }
@@ -3493,6 +3522,8 @@ var JpegImage = (function jpegImage() {
       return 2; // unsigned 16 bit
     } else if(pixelRepresentation === 1 && bitsAllocated === 16) {
       return 3; // signed 16 bit data
+    } else if(pixelRepresentation === 0 && bitsAllocated === 1) {
+      return 4; // single binary mask
     }
   }
 
@@ -4264,6 +4295,8 @@ var JpegImage = (function jpegImage() {
         }
         else if(pixelFormat ===2 || pixelFormat ===3){
             return 2;
+        } else if (pixelFormat === 4) {
+            return 0.125; // Bit array
         }
         throw "unknown pixel format";
     }
@@ -4409,7 +4442,7 @@ var JpegImage = (function jpegImage() {
   "use strict";
 
   // module exports
-  cornerstoneWADOImageLoader.version = '0.10.1';
+  cornerstoneWADOImageLoader.version = '0.10.2';
 
 }(cornerstoneWADOImageLoader));
 (function ($, cornerstone, cornerstoneWADOImageLoader) {

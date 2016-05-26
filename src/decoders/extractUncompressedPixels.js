@@ -21,6 +21,31 @@
     return imageFrame;
   }
 
+  function unpackBinaryFrame(byteArray, frameOffset, numPixels) {
+      var pixelData = new Uint8Array(numPixels);
+
+      var bytePos = 0;
+      var nonzero = 0;
+      for (var count = 0; count < numPixels; count++) {
+        // Compute byte position
+        bytePos = Math.floor(count / 8);
+
+        // Bit position (0-7) within byte
+        var bitPos = (count % 8);
+
+        // Check whether bit at bitpos is set
+        if (byteArray[bytePos + frameOffset] && (1 << bitPos)) {
+          pixelData[count] = 1;
+          nonzero = nonzero + 1;
+        } else {
+          pixelData[count] = 0;
+        }
+      }
+      console.log('Number of nonzero elements: ' + nonzero);
+      return pixelData;
+
+  }
+
   function getImageFrame(dataSet, frame, pixelFormat) {
     // Note - we may want to sanity check the rows * columns * bitsAllocated * samplesPerPixel against the buffer size
     var pixelDataElement = dataSet.elements.x7fe00010;
@@ -45,6 +70,10 @@
     else if(pixelFormat === 3) {
       frameOffset = pixelDataOffset + frame * numPixels * 2;
       return new Int16Array(dataSet.byteArray.buffer, frameOffset, numPixels);
+    }
+    else if(pixelFormat === 4) {
+      frameOffset = pixelDataOffset + frame * numPixels * 0.125;
+      return unpackBinaryFrame(dataSet.byteArray, frameOffset, numPixels);
     }
     throw "Unknown pixel format";
   }
